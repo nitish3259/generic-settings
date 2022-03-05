@@ -1,17 +1,11 @@
-// const mongoose = require("mongoose");
+const mongoose = require("mongoose");
+const { Schema } = mongoose;
 
-// let obj = {
-//   appId: {
-//     type: String,
-//   },
-//   model: {
-//     type: mongoose.Schema.Types.Mixed,
-//   },
-// };
-// // console.log(obj);
+const appSchema = new Schema({
+  appId: String,
+  configs: Schema.Types.Mixed,
+});
 
-// const modelsSchema = new mongoose.Schema(obj);
+const AppConfig = mongoose.model("apps", appSchema);
 
-// const Models = mongoose.model("models", modelsSchema);
-
-// module.exports = Models;
+module.exports = AppConfig;

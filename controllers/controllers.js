@@ -1,55 +1,22 @@
 //controllers.js
 
-const mongoose = require("mongoose");
-
-const Models = require("../models/models");
+const AppConfig = require("../models/models");
 
 exports.registerApp = async (req, res) => {
-  const { appId, config } = req.body;
-  const configArray = Object.entries(config);
-  let schemaObj = {};
-  configArray.forEach(([key, value]) => {
-    schemaObj[key] = {};
-    Object.entries(value).forEach(([option, val]) => {
-      if (option === "type") {
-        if (val === "input") {
-          if (value["valueType"] && value["valueType"] === "number") {
-            schemaObj[key].type = Number;
-          } else schemaObj[key].type = String;
-        } else if (val === "select") {
-          schemaObj[key].type = String;
-          schemaObj[key].enum = value["options"];
-        } else if (val === "checkbox") {
-          schemaObj[key].type = Boolean;
-        } else if (val === "group") {
-          schemaObj[key].type = String;
-          let options = [];
-          value.options.forEach(({ value }) => {
-            options.push(value);
-          });
-          schemaObj[key].enum = options;
-        }
-      } else if (option === "required") {
-        if (val === true) {
-          schemaObj[key].required = true;
-        } else {
-          schemaObj[key].required = false;
-        }
-      } else if (option === "readonly") {
-        if (val === true) {
-          schemaObj[key].immutable = true;
-        }
-      }
-    });
-  });
   try {
-    const AppSchema = new mongoose.Schema(schemaObj);
-    var App = mongoose.model(appId, AppSchema);
-    console.log(AppSchema);
-    res.json({
-      message: "Cheers!! You have successfully updated TODO",
-      //Apps,
-    });
+    const app = await AppConfig.findOne({ appId: appId });
+    if (app) {
+      res.status(404).json({
+        message: "Sorry your app already exist",
+        status: 404,
+      });
+    } else {
+      const response = await AppConfig.create(req.body);
+      res.json({
+        message: "Cheers!! You have successfully updated TODO",
+        response,
+      });
+    }
   } catch (err) {
     res.status(404).json({
       message: "Sorry your document cannot be added",
@@ -60,14 +27,24 @@ exports.registerApp = async (req, res) => {
 
 exports.indexDocument = async (req, res) => {
   try {
-    const { appId, settings } = req.body;
-    const App = mongoose.model(appId);
-    console.log(App);
-    await App.create(settings);
-    res.json({
-      message: "Cheers!! You have successfully added document",
-      settings,
-    });
+    const configs = req.body;
+    const app = await AppConfig.findOne({ appId: req.params.appId });
+    if (app) {
+      Object.entries(configs).forEach(([key, value]) => {
+        app.configs[key] = value;
+      });
+      app.markModified("configs");
+      await app.save();
+      res.json({
+        message: "Cheers!! You have successfully added document",
+        app,
+      });
+    } else {
+      res.status(404).json({
+        message: "Sorry your app does not exist",
+        status: 404,
+      });
+    }
   } catch (err) {
     res.status(404).json({
       message: "Sorry your document cannot be added",
@@ -76,75 +53,117 @@ exports.indexDocument = async (req, res) => {
   }
 };
 
-// exports.getAllSettings = (req, res) => {
-//   Apps.findOne({ appId: req.params.appId })
-//     .then((app) => {
-//       console.log({ app });
-//       res.json(app.settings);
-//     })
-//     .catch((err) => {
-//       res.status(404).json({
-//         message: "There isnt any setting available",
-//         error: err.message,
-//       });
-//     });
-// };
+exports.getConfigs = async (req, res) => {
+  try {
+    const app = await AppConfig.findOne({ appId: req.params.appId });
+    if (app) {
+      const { configs } = app;
+      res.json({
+        message: "Cheers!! You have successfully added document",
+        configs,
+      });
+    } else {
+      res.status(404).json({
+        message: "Sorry your app does not exist",
+        status: 404,
+      });
+    }
+  } catch (err) {
+    res.status(404).json({
+      message: "Sorry your document cannot be added",
+      error: err.message,
+    });
+  }
+};
 
-// exports.getSetting = (req, res) => {
-//   Apps.findOne({ appId: req.params.appId })
-//     .then((app) => {
-//       let requiredSetting = {};
-//       app.settings.forEach((setting) => {
-//         if (setting._id.toString() === req.params.documentId) {
-//           requiredSetting = setting;
-//         }
-//       });
-//       res.json(requiredSetting);
-//     })
-//     .catch((err) => {
-//       res.status(404).json({
-//         message: "There isnt any setting available",
-//         error: err.message,
-//       });
-//     });
-// };
+exports.getValue = async (req, res) => {
+  try {
+    const app = await AppConfig.findOne({ appId: req.params.appId });
+    if (app) {
+      const { configs } = app;
+      const { key } = req.body;
+      if (configs[key]) {
+        const value = configs[key];
+        res.json({
+          message: "Cheers!! You have successfully added document",
+          value,
+        });
+      } else {
+        res.status(404).json({
+          message: "Sorry key does not exist",
+          status: 404,
+        });
+      }
+    } else {
+      res.status(404).json({
+        message: "Sorry your app does not exist",
+        status: 404,
+      });
+    }
+  } catch (err) {
+    res.status(404).json({
+      message: "Sorry your document cannot be added",
+      error: err.message,
+    });
+  }
+};
 
-// exports.getValue = (req, res) => {
-//   Apps.findOne({ appId: req.params.appId })
-//     .then((app) => {
-//       let requiredSetting = {};
-//       app.settings.forEach((setting) => {
-//         if (setting._id.toString() === req.params.documentId) {
-//           requiredSetting = setting;
-//         }
-//       });
-//       const { key } = req.body;
-//       res.json(requiredSetting[key]);
-//     })
-//     .catch((err) => {
-//       res.status(404).json({
-//         message: "There isnt any setting available",
-//         error: err.message,
-//       });
-//     });
-// };
+exports.removeConfigs = async (req, res) => {
+  try {
+    const configs = req.body;
+    const app = await AppConfig.findOne({ appId: req.params.appId });
+    if (app) {
+      app.configs = {};
+      app.markModified("configs");
+      await app.save();
+      res.json({
+        message: "Cheers!! You have successfully deleted document",
+        app,
+      });
+    } else {
+      res.status(404).json({
+        message: "Sorry your app does not exist",
+        status: 404,
+      });
+    }
+  } catch (err) {
+    res.status(404).json({
+      message: "Sorry your document cannot be added",
+      error: err.message,
+    });
+  }
+};
 
-// exports.deleteSetting = async (req, res) => {
-//   try {
-//     const app = await Apps.findOne({ appId: req.params.appId });
-//     app.settings = app.settings.filter(
-//       (setting) => setting._id.toString() !== req.params.documentId
-//     );
-//     console.log(app.settings);
-//     await app.save();
-//     res.json({
-//       message: "Cheers!! You have successfully deleted TODO",
-//       app,
-//     });
-//   } catch (err) {
-//     res.status(404).json({
-//       message: "Sorry your todo list cannot be deleted",
-//       error: err.message,
-//     });
-//   }
-// };
+exports.removeConfig = async (req, res) => {
+  try {
+    const app = await AppConfig.findOne({ appId: req.params.appId });
+    if (app) {
+      const { configs } = app;
+      const { key } = req.body;
+      if (configs[key]) {
+        delete app.configs[key];
+        app.markModified("configs");
+        await app.save();
+        res.json({
+          message: "Cheers!! You have successfully added document",
+          app,
+        });
+      } else {
+        res.status(404).json({
+          message: "Sorry key does not exist",
+          status: 404,
+        });
+      }
+    } else {
+      res.status(404).json({
+        message: "Sorry your app does not exist",
+        status: 404,
+      });
+    }
+  } catch (err) {
+    res.status(404).json({
+      message: "Sorry your document cannot be added",
+      error: err.message,
+    });
+  }
+};
