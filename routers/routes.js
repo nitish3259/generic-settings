@@ -5,22 +5,25 @@ const router = express.Router();
 const {
   registerApp,
   indexDocument,
-  getConfigs,
+  getAppConfig,
+  getIndexDocument,
   getValue,
-  removeConfigs,
-  removeConfig,
+  // removeConfigs,
+  // removeConfig,
 } = require("../controllers/controllers.js");
 
-router.post("/", registerApp);
+router.post("/register", registerApp);
 
-router.put("/:appId", indexDocument);
+router.post("/indexDocument/:appId", indexDocument);
 
-router.get("/:appId", getConfigs);
+router.get("/getAppConfig/:appId", getAppConfig);
 
-router.get("/:appId/value", getValue);
+router.get("/getDocument/:appId", getIndexDocument);
 
-router.delete("/:appId/", removeConfigs);
+router.get("/getValue/:appId", getValue);
 
-router.delete("/:appId/removeConfig", removeConfig);
+// router.delete("/:appId/", removeConfigs);
+
+// router.delete("/:appId/removeConfig", removeConfig);
 
 module.exports = router;
